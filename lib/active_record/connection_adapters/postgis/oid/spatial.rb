@@ -1,3 +1,5 @@
+require 'to_wkt_'
+
 module ActiveRecord
   module ConnectionAdapters
     module PostGIS
@@ -68,6 +70,12 @@ module ActiveRecord
 
           def type
             geographic? ? :geography : :geometry
+          end
+
+          # support also setting arrays
+          def cast(value)
+            value = value.to_wkt(@geo_type.underscore.to_sym) if Array === value
+            cast_value(value)
           end
 
           # support setting an RGeo object or a WKT string

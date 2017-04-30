@@ -84,6 +84,34 @@ class BasicTest < ActiveSupport::TestCase  # :nodoc:
     end
   end
 
+  def test_set_point_from_array
+    klass = SpatialModel
+    obj = klass.new
+    obj.latlon_geo = [1.0, 2.0]
+    obj.save!
+    id = obj.id
+    obj2 = klass.find(id)
+    assert_equal(geographic_factory.point(1.0, 2.0), obj2.latlon_geo)
+    assert_equal(4326, obj2.latlon_geo.srid)
+    assert_equal(false, ::RGeo::Geos.is_geos?(obj2.latlon_geo))
+  end
+
+  def test_set_line_string_from_array
+    klass = SpatialModel
+    obj = klass.new
+    line_array = [ [1.0, 1.0], [2.0, 2.0], [3.0, 3.0] ]
+    points = line_array.map{ |a| geographic_factory.point(*a) }
+    line_string = geographic_factory.line_string(points)
+    obj.line = line_array
+    obj.save!
+    id = obj.id
+    obj2 = klass.find(id)
+
+    assert_equal(obj2.line, line_string)
+    assert_equal(4326, obj2.line.srid)
+    assert_equal(false, ::RGeo::Geos.is_geos?(obj2.line))
+  end
+
   def test_custom_factory
     klass = SpatialModel
     klass.connection.create_table(:spatial_models, force: true) do |t|
@@ -167,6 +195,7 @@ class BasicTest < ActiveSupport::TestCase  # :nodoc:
     SpatialModel.connection.create_table(:spatial_models, force: true) do |t|
       t.column "latlon", :st_point, srid: 3785
       t.column "latlon_geo", :st_point, srid: 4326, geographic: true
+      t.column 'line', :line_string, srid: 4326, geographic: true
     end
     SpatialModel.reset_column_information
   end
